@@ -47,11 +47,17 @@ def delete_tweets(extracted_tweet_ids: list) -> None:
         if del_response.status_code == 200:
             deleted_count += 1
             print(f"Deleted tweet ID: {tweet_id}, deleted count: {deleted_count}")
-        else:
+        elif del_response.status_code == 429:
+            print("Rate limit exceeded. Waiting for 15 minutes...")
+            break
+        elif del_response.status_code == 404:
             failed_count += 1
-            print(f"Failed to delete tweet ID: {tweet_id},\
-                    Status Code: {del_response.status_code},\
-                    failed count: {failed_count}")
+            print(
+                f"Failed to delete tweet ID: {tweet_id}, "
+                f"Already deleted or does not exist."
+                f"Status Code: {del_response.status_code}, "
+                f"failed count: {failed_count}"
+            )
 
 # 実行
 archive_file_path = 'tweets.js' # アーカイブファイルのパスを指定
