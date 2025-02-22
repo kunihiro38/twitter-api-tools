@@ -67,6 +67,13 @@ def delete_twitter_content(extracted_ids, url_endpoint):
                 f"failed count: {failed_count}"
             )
         elif del_response.status_code == 403:
+            response_data = del_response.json()
+            # print(response_data)
+            if "errors" in response_data:
+                for error in response_data["errors"]:
+                    if error["code"] == 453:
+                        print(error["message"], "Elevated 以上のアクセス権が必要（無料の Essential では不可）")
+                        return # 強制終了
             failed_count += 1
             print(
                 f"Failed to delete tweet ID: {tweet_id}, "
