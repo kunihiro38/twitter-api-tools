@@ -1,7 +1,9 @@
 
+import csv
 import json
 import os
 import sys
+import time
 import requests
 from dotenv import load_dotenv
 from requests_oauthlib import OAuth1
@@ -85,6 +87,44 @@ def delete_twitter_content(extracted_ids, url_endpoint):
         else:
             print(del_response.status_code)
 
+# 特定のユーザーのツイートを取得する
+def get_user_tweets(screen_name, max_tweets=3200):
+    url = "https://api.twitter.com/1.1/statuses/user_timeline.json"
+    params = {
+        "screen_name": screen_name,
+        "count": 200,
+        "tweet_mode": "extended"
+    }
+
+    all_tweets = []
+    while len(all_tweets) < max_tweets:
+        response = requests.get(url, auth=auth, params=params)
+
+        if response.status_code == 200:
+            tweets = response.json()
+            if not tweets:
+                break
+
+            all_tweets.extend(tweets)
+            last_tweet_id = tweets[-1]["id"] - 1
+            params["max_id"] = last_tweet_id
+        else:
+            print("Error", response.json())
+            break
+
+        time.sleep() # API制限を回避するために少し待機
+    return all_tweets[:max_tweets]
+
+def save_tweets_to_csv(tweets, filename="tweets.csv"):
+    with open(filename, mode="w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerow(["Created At", "Tweet"])
+
+        for tweet in tweets:
+            writer.writerow([tweet["created_at"], tweet["full_text"]])
+
+    print(f"Saved {len(tweets)} tweets to {filename}")
+
 
 # ツイート全消しの実行
 # action_items = "tweets"
@@ -94,9 +134,15 @@ def delete_twitter_content(extracted_ids, url_endpoint):
 # delete_twitter_content(tweet_ids, url_delete_tweet_endpoint)
 
 # いいね全消しの実行
-action_items = "like"
-archive_likes_file_path = 'data/like.js'
-like_ids = extract_ids_from_archive(archive_likes_file_path, action_items)
-url_delete_like_endpoint = "https://api.twitter.com/1.1/favorites/destroy/"
-delete_twitter_content(like_ids, url_delete_like_endpoint)
+# action_items = "like"
+# archive_likes_file_path = 'data/like.js'
+# like_ids = extract_ids_from_archive(archive_likes_file_path, action_items)
+# url_delete_like_endpoint = "https://api.twitter.com/1.1/favorites/destroy/"
+# delete_twitter_content(like_ids, url_delete_like_endpoint)
 
+# 特定のユーザーのツイートを取得する
+screen_name = "iiGIANT"
+
+# 実行
+tweets = get_user_tweets(screen_name)
+save_tweets_to_csv(tweets)
