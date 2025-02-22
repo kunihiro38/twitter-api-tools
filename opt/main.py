@@ -1,6 +1,7 @@
 
 import json
 import os
+import sys
 import requests
 from dotenv import load_dotenv
 from requests_oauthlib import OAuth1
@@ -73,7 +74,7 @@ def delete_twitter_content(extracted_ids, url_endpoint):
                 for error in response_data["errors"]:
                     if error["code"] == 453:
                         print(error["message"], "Elevated 以上のアクセス権が必要（無料の Essential では不可）")
-                        return # 強制終了
+                        sys.exit() # 強制終了
             failed_count += 1
             print(
                 f"Failed to delete tweet ID: {tweet_id}, "
