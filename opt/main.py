@@ -18,7 +18,7 @@ ACCESS_TOKEN_SECRET = os.environ['ACCESS_TOKEN_SECRET']
 auth = OAuth1(API_KEY, API_SECRET_KEY, ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
 
 # アーカイブデータからツイートIDを抽出する関数
-def extract_ids_from_archive(file_path):
+def extract_ids_from_archive(file_path, action_items):
     '''
     引数:
         archive_file_path (str): アーカイブのパス
@@ -26,12 +26,19 @@ def extract_ids_from_archive(file_path):
     extracted_ids_list = []
     with open(file_path, 'r', encoding='utf-8') as file:
         data = file.read()
-        data = data.replace('window.YTD.tweets.part0 = ', '')
+        data = data.replace(f'window.YTD.{action_items}.part0 = ', '')
         tweets_data = json.loads(data)
 
-        for tweet in tweets_data:
-            tweet_id = tweet['tweet']['id_str']
-            extracted_ids_list.append(tweet_id)
+        if action_items == "tweets":
+            for tweet in tweets_data:
+                tweet_id = tweet['tweet']['id_str']
+                extracted_ids_list.append(tweet_id)
+
+        elif action_items == "like":
+            for like in tweets_data:
+                like_id = like["like"]["tweetId"]
+                extracted_ids_list.append(like_id)
+
     return extracted_ids_list
 
 
@@ -59,18 +66,29 @@ def delete_twitter_content(extracted_ids, url_endpoint):
                 f"Status Code: {del_response.status_code}, "
                 f"failed count: {failed_count}"
             )
+        elif del_response.status_code == 403:
+            failed_count += 1
+            print(
+                f"Failed to delete tweet ID: {tweet_id}, "
+                f"Forbidden."
+                f"Status Code: {del_response.status_code}, "
+                f"failed count: {failed_count}"
+            )
+        else:
+            print(del_response.status_code)
 
 
 # ツイート全消しの実行
-archive_tweets_file_path = 'data/tweets.js'
-tweet_ids = extract_ids_from_archive(archive_tweets_file_path)
-url_delete_tweet_endpoint = "https://api.twitter.com/1.1/statuses/destroy/"
-delete_twitter_content(tweet_ids, url_delete_tweet_endpoint)
-print("Done!")
+# action_items = "tweets"
+# archive_tweets_file_path = 'data/tweets.js'
+# tweet_ids = extract_ids_from_archive(archive_tweets_file_path, action_items)
+# url_delete_tweet_endpoint = "https://api.twitter.com/1.1/statuses/destroy/"
+# delete_twitter_content(tweet_ids, url_delete_tweet_endpoint)
 
 # いいね全消しの実行
-# archive_likes_file_path = 'data/like.js'
-# like_ids = extract_ids_from_archive(archive_likes_file_path)
-# url_delete_like_endpoint = "https://api.twitter.com/1.1/favorites/destroy/"
-# delete_twitter_content(like_ids, url_delete_like_endpoint)
+action_items = "like"
+archive_likes_file_path = 'data/like.js'
+like_ids = extract_ids_from_archive(archive_likes_file_path, action_items)
+url_delete_like_endpoint = "https://api.twitter.com/1.1/favorites/destroy/"
+delete_twitter_content(like_ids, url_delete_like_endpoint)
 
