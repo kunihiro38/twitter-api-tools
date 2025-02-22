@@ -3,4 +3,4 @@
 .python_history
 .gitconfig
 .env
-tweets.js
+data/
